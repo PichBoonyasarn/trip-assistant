@@ -50,11 +50,8 @@ async function createWindow() {
 
   mainWindow.loadURL(`http://localhost:${LAUNCHER_PORT}`);
 
-  // Ctrl+Home / Cmd+Home → return to launcher from any sub-app
-  app.whenReady().then(() => {
-    globalShortcut.register('CommandOrControl+Home', () => {
-      if (mainWindow) mainWindow.loadURL(`http://localhost:${LAUNCHER_PORT}`);
-    });
+  globalShortcut.register('CommandOrControl+Home', () => {
+    if (mainWindow) mainWindow.loadURL(`http://localhost:${LAUNCHER_PORT}`);
   });
 }
 
