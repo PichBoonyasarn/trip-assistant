@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beta Test Plan — Hotel Finder</title>
+<style>
+  :root {
+    --ink: #1f2a24;
+    --paper: #f6f3ec;
+    --moss: #4a6354;
+    --moss-deep: #2f4338;
+    --clay: #c4683f;
+    --line: #d8d2c4;
+    --pass: #2e7d4f;
+    --pass-bg: #e8f4ee;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 20px; margin-bottom: 32px; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--moss); margin-bottom: 8px; }
+  h1 { font-size: 28px; font-weight: 700; margin: 0 0 6px; color: var(--ink); }
+  .subtitle { font-size: 13px; color: #6b6256; max-width: 600px; margin: 0; }
+
+  .progress-bar-wrap {
+    background: #e4dfd4;
+    border-radius: 6px;
+    height: 10px;
+    margin: 24px 0 4px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--pass);
+    border-radius: 6px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+  .progress-label { font-size: 12px; color: #6b6256; margin-bottom: 28px; }
+
+  .section {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: #faf8f3;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-header:hover { background: #f3efe6; }
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--moss-deep);
+    padding-left: 12px;
+    border-left: 4px solid var(--moss);
+  }
+  .section-meta { font-size: 12px; color: #9a9080; display: flex; align-items: center; gap: 12px; }
+  .section-count { font-weight: 600; color: var(--moss); }
+  .chevron { font-size: 12px; color: #9a9080; transition: transform 0.2s; }
+  .section.collapsed .chevron { transform: rotate(-90deg); }
+  .section.collapsed .section-body { display: none; }
+
+  .section-body { padding: 8px 0; }
+
+  .test-row {
+    display: grid;
+    grid-template-columns: 40px 52px 1fr;
+    align-items: start;
+    padding: 10px 24px;
+    border-bottom: 1px solid #f0ece3;
+    gap: 8px;
+    transition: background 0.1s;
+  }
+  .test-row:last-child { border-bottom: none; }
+  .test-row.done { background: var(--pass-bg); }
+  .test-row.done .test-desc { color: #6b9e80; }
+  .test-row.done .test-id { color: #6b9e80; }
+
+  input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: var(--pass);
+    cursor: pointer;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .test-id { font-size: 11px; font-weight: 700; color: #9a9080; font-family: 'Courier New', monospace; padding-top: 3px; }
+  .test-content { display: flex; flex-direction: column; gap: 3px; }
+  .test-desc { font-size: 13px; color: var(--ink); }
+  .test-expected { font-size: 12px; color: #6b6256; }
+  .test-expected::before { content: '→ '; color: var(--moss); font-weight: 700; }
+
+  .bug-note {
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: #fff8f0;
+    border: 1px solid #f0d8c0;
+    border-radius: 3px;
+    font-size: 12px;
+    color: #7a4820;
+    display: none;
+  }
+  .bug-note.visible { display: block; }
+
+  .add-note-btn {
+    margin-top: 5px;
+    font-size: 11px;
+    color: var(--moss);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    display: none;
+  }
+  .test-row:hover .add-note-btn { display: inline; }
+  .note-input {
+    margin-top: 5px;
+    width: 100%;
+    font-size: 12px;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-family: inherit;
+    color: var(--ink);
+    background: #fff;
+    display: none;
+    resize: vertical;
+  }
+  .note-input.open { display: block; }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin: 24px 0 0;
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-moss { background: var(--moss-deep); color: #fff; border-color: var(--moss-deep); }
+  .btn-moss:hover { background: var(--moss); }
+  .btn-ghost { background: #fff; color: var(--ink); }
+  .btn-ghost:hover { background: #f3efe6; }
+  .btn-danger { background: #fff; color: #b03030; border-color: #e8c8c8; }
+  .btn-danger:hover { background: #fff0f0; }
+
+  code {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    background: #e8e4d8;
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: var(--clay);
+  }
+
+  footer {
+    margin-top: 48px;
+    font-size: 11px;
+    color: #b3aa9b;
+    text-align: center;
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+  }
+
+  #export-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--moss-deep);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 4px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 999;
+  }
+  #export-toast.visible { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Hotel Finder · Internal QA</div>
+    <h1>Beta Test Plan</h1>
+    <p class="subtitle">
+      Work through these before shipping to the team. Check each item as you go —
+      progress is saved in your browser. Click any section header to collapse it.
+    </p>
+  </header>
+
+  <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+  <div class="progress-label" id="progressLabel">0 / 0 tests passed</div>
+
+  <div class="actions">
+    <button class="btn btn-moss" onclick="expandAll()">Expand all</button>
+    <button class="btn btn-ghost" onclick="collapseAll()">Collapse all</button>
+    <button class="btn btn-danger" onclick="resetAll()">Reset all checks</button>
+    <button class="btn btn-moss" onclick="exportResults()">Export results</button>
+  </div>
+  <div id="export-toast"></div>
+
+  <!-- ── Section 1 ─────────────────────────────────────────── -->
+  <div class="section" id="s1">
+    <div class="section-header" onclick="toggleSection('s1')">
+      <div class="section-title">1 · Search &amp; Filtering</div>
+      <div class="section-meta"><span class="section-count" id="s1-count"></span><span class="chevron">▼</span></div>
+    </div>
+    <div class="section-body">
+      <div class="test-row" id="t1.1">
+        <input type="checkbox" onchange="mark('t1.1',this)">
+        <div class="test-id">1.1</div>
+        <div class="test-content">
+          <div class="test-desc">Enter a valid 現場 address, click 検索する</div>
+          <div class="test-expected">Results appear, map shows markers, route + spot panels show placeholder text</div>
+          <button class="add-note-btn" onclick="toggleNote('t1.1')">+ note</button>
+          <textarea class="note-input" id="note-t1.1" placeholder="Bug / observation…" onchange="saveNote('t1.1',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t1.2">
+        <input type="checkbox" onchange="mark('t1.2',this)">
+        <div class="test-id">1.2</div>
+        <div class="test-content">
+          <div class="test-desc">Enter a non-existent address (e.g. "あああああ駅")</div>
+          <div class="test-expected">Error message or empty results — no crash or blank screen</div>
+          <button class="add-note-btn" onclick="toggleNote('t1.2')">+ note</button>
+          <textarea class="note-input" id="note-t1.2" placeholder="Bug / observation…" onchange="saveNote('t1.2',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t1.3">
+        <input type="checkbox" onchange="mark('t1.3',this)">
+        <div class="test-id">1.3</div>
+        <div class="test-content">
+          <div class="test-desc">Set 最大件数 to 10, run search</div>
+          <div class="test-expected">Up to 10 hotel cards shown</div>
+          <button class="add-note-btn" onclick="toggleNote('t1.3')">+ note</button>
+          <textarea class="note-input" id="note-t1.3" placeholder="Bug / observation…" onchange="saveNote('t1.3',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t1.4">
+        <input type="checkbox" onchange="mark('t1.4',this)">
+        <div class="test-id">1.4</div>
+        <div class="test-content">
+          <div class="test-desc">Set 最大件数 to 1, run search</div>
+          <div class="test-expected">Exactly 1 result card</div>
+          <button class="add-note-btn" onclick="toggleNote('t1.4')">+ note</button>
+          <textarea class="note-input" id="note-t1.4" placeholder="Bug / observation…" onchange="saveNote('t1.4',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t1.5">
+        <input type="checkbox" onchange="mark('t1.5',this)">
+        <div class="test-id">1.5</div>
+        <div class="test-content">
+          <div class="test-desc">Set 半径 very small (e.g. 500 m) in a low-density area</div>
+          <div class="test-expected">Empty-state message: "この範囲内に宿泊施設が見つかりませんでした"</div>
+          <button class="add-note-btn" onclick="toggleNote('t1.5')">+ note</button>
+          <textarea class="note-input" id="note-t1.5" placeholder="Bug / observation…" onchange="saveNote('t1.5',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t1.6">
+        <input type="checkbox" onchange="mark('t1.6',this)">
+        <div class="test-id">1.6</div>
+        <div class="test-content">
+          <div class="test-desc">Set a low 予算上限 (e.g. ¥5,000), run search</div>
+          <div class="test-expected">Hotels over the cap are excluded from results</div>
+          <button class="add-note-btn" onclick="toggleNote('t1.6')">+ note</button>
+          <textarea class="note-input" id="note-t1.6" placeholder="Bug / observation…" onchange="saveNote('t1.6',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t1.7">
+        <input type="checkbox" onchange="mark('t1.7',this)">
+        <div class="test-id">1.7</div>
+        <div class="test-content">
+          <div class="test-desc">Uncheck ビジネスホテルを優先 exclusions (add 旅館, リゾート), re-search</div>
+          <div class="test-expected">Those types now appear in results</div>
+          <button class="add-note-btn" onclick="toggleNote('t1.7')">+ note</button>
+          <textarea class="note-input" id="note-t1.7" placeholder="Bug / observation…" onchange="saveNote('t1.7',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t1.8">
+        <input type="checkbox" onchange="mark('t1.8',this)">
+        <div class="test-id">1.8</div>
+        <div class="test-content">
+          <div class="test-desc">Check 「価格情報がないホテルを除外する」, re-search</div>
+          <div class="test-expected">Hotels showing "—" price disappear from results</div>
+          <button class="add-note-btn" onclick="toggleNote('t1.8')">+ note</button>
+          <textarea class="note-input" id="note-t1.8" placeholder="Bug / observation…" onchange="saveNote('t1.8',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t1.9">
+        <input type="checkbox" onchange="mark('t1.9',this)">
+        <div class="test-id">1.9</div>
+        <div class="test-content">
+          <div class="test-desc">Run two different searches back-to-back</div>
+          <div class="test-expected">Route/spot panels reset; old hotel selection cleared; no stale data</div>
+          <button class="add-note-btn" onclick="toggleNote('t1.9')">+ note</button>
+          <textarea class="note-input" id="note-t1.9" placeholder="Bug / observation…" onchange="saveNote('t1.9',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 2 ─────────────────────────────────────────── -->
+  <div class="section" id="s2">
+    <div class="section-header" onclick="toggleSection('s2')">
+      <div class="section-title">2 · Result Cards</div>
+      <div class="section-meta"><span class="section-count" id="s2-count"></span><span class="chevron">▼</span></div>
+    </div>
+    <div class="section-body">
+      <div class="test-row" id="t2.1">
+        <input type="checkbox" onchange="mark('t2.1',this)">
+        <div class="test-id">2.1</div>
+        <div class="test-content">
+          <div class="test-desc">Click a hotel card</div>
+          <div class="test-expected">Card highlights in green; corresponding map marker bounces</div>
+          <button class="add-note-btn" onclick="toggleNote('t2.1')">+ note</button>
+          <textarea class="note-input" id="note-t2.1" placeholder="Bug / observation…" onchange="saveNote('t2.1',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t2.2">
+        <input type="checkbox" onchange="mark('t2.2',this)">
+        <div class="test-id">2.2</div>
+        <div class="test-content">
+          <div class="test-desc">Click a map marker</div>
+          <div class="test-expected">Corresponding card highlights and scrolls into view</div>
+          <button class="add-note-btn" onclick="toggleNote('t2.2')">+ note</button>
+          <textarea class="note-input" id="note-t2.2" placeholder="Bug / observation…" onchange="saveNote('t2.2',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t2.3">
+        <input type="checkbox" onchange="mark('t2.3',this)">
+        <div class="test-id">2.3</div>
+        <div class="test-content">
+          <div class="test-desc">Find a hotel with no photo in results</div>
+          <div class="test-expected">"写真なし" placeholder shows at correct size — no broken image icon</div>
+          <button class="add-note-btn" onclick="toggleNote('t2.3')">+ note</button>
+          <textarea class="note-input" id="note-t2.3" placeholder="Bug / observation…" onchange="saveNote('t2.3',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t2.4">
+        <input type="checkbox" onchange="mark('t2.4',this)">
+        <div class="test-id">2.4</div>
+        <div class="test-content">
+          <div class="test-desc">Find a hotel with a very long name</div>
+          <div class="test-expected">Name wraps or truncates without breaking the card layout</div>
+          <button class="add-note-btn" onclick="toggleNote('t2.4')">+ note</button>
+          <textarea class="note-input" id="note-t2.4" placeholder="Bug / observation…" onchange="saveNote('t2.4',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t2.5">
+        <input type="checkbox" onchange="mark('t2.5',this)">
+        <div class="test-id">2.5</div>
+        <div class="test-content">
+          <div class="test-desc">Check row 1 of info: 📍 distance · 🚗 drive time · price</div>
+          <div class="test-expected">Font &amp; icon size visibly larger than row 2 (1.2× = 16 px)</div>
+          <button class="add-note-btn" onclick="toggleNote('t2.5')">+ note</button>
+          <textarea class="note-input" id="note-t2.5" placeholder="Bug / observation…" onchange="saveNote('t2.5',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t2.6">
+        <input type="checkbox" onchange="mark('t2.6',this)">
+        <div class="test-id">2.6</div>
+        <div class="test-content">
+          <div class="test-desc">Check row 2 of info: 📞 phone · ★ rating · 💬 reviews</div>
+          <div class="test-expected">Correct values displayed; 📞 absent when hotel has no phone</div>
+          <button class="add-note-btn" onclick="toggleNote('t2.6')">+ note</button>
+          <textarea class="note-input" id="note-t2.6" placeholder="Bug / observation…" onchange="saveNote('t2.6',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t2.7">
+        <input type="checkbox" onchange="mark('t2.7',this)">
+        <div class="test-id">2.7</div>
+        <div class="test-content">
+          <div class="test-desc">Hotel with estimated price (not LiteAPI confirmed)</div>
+          <div class="test-expected">Small grey <code>(推定)</code> label appears next to price</div>
+          <button class="add-note-btn" onclick="toggleNote('t2.7')">+ note</button>
+          <textarea class="note-input" id="note-t2.7" placeholder="Bug / observation…" onchange="saveNote('t2.7',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 3 ─────────────────────────────────────────── -->
+  <div class="section" id="s3">
+    <div class="section-header" onclick="toggleSection('s3')">
+      <div class="section-title">3 · Route Panel (ルート確認)</div>
+      <div class="section-meta"><span class="section-count" id="s3-count"></span><span class="chevron">▼</span></div>
+    </div>
+    <div class="section-body">
+      <div class="test-row" id="t3.1">
+        <input type="checkbox" onchange="mark('t3.1',this)">
+        <div class="test-id">3.1</div>
+        <div class="test-content">
+          <div class="test-desc">Click ルート確認 on any hotel card</div>
+          <div class="test-expected">Route panel appears showing map from 現場 to hotel</div>
+          <button class="add-note-btn" onclick="toggleNote('t3.1')">+ note</button>
+          <textarea class="note-input" id="note-t3.1" placeholder="Bug / observation…" onchange="saveNote('t3.1',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t3.2">
+        <input type="checkbox" onchange="mark('t3.2',this)">
+        <div class="test-id">3.2</div>
+        <div class="test-content">
+          <div class="test-desc">Click ルート確認 on a different hotel</div>
+          <div class="test-expected">Panel updates to the new hotel's route (not stuck on previous)</div>
+          <button class="add-note-btn" onclick="toggleNote('t3.2')">+ note</button>
+          <textarea class="note-input" id="note-t3.2" placeholder="Bug / observation…" onchange="saveNote('t3.2',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t3.3">
+        <input type="checkbox" onchange="mark('t3.3',this)">
+        <div class="test-id">3.3</div>
+        <div class="test-content">
+          <div class="test-desc">Check the panel heading</div>
+          <div class="test-expected">Shows "ルート: 現場 → [ホテル名]" with correct hotel name</div>
+          <button class="add-note-btn" onclick="toggleNote('t3.3')">+ note</button>
+          <textarea class="note-input" id="note-t3.3" placeholder="Bug / observation…" onchange="saveNote('t3.3',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t3.4">
+        <input type="checkbox" onchange="mark('t3.4',this)">
+        <div class="test-id">3.4</div>
+        <div class="test-content">
+          <div class="test-desc">Check the top-left 現場 → 起点 route after search</div>
+          <div class="test-expected">Route from company address to worksite loads automatically</div>
+          <button class="add-note-btn" onclick="toggleNote('t3.4')">+ note</button>
+          <textarea class="note-input" id="note-t3.4" placeholder="Bug / observation…" onchange="saveNote('t3.4',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 4 ─────────────────────────────────────────── -->
+  <div class="section" id="s4">
+    <div class="section-header" onclick="toggleSection('s4')">
+      <div class="section-title">4 · 周辺スポット Panel</div>
+      <div class="section-meta"><span class="section-count" id="s4-count"></span><span class="chevron">▼</span></div>
+    </div>
+    <div class="section-body">
+      <div class="test-row" id="t4.1">
+        <input type="checkbox" onchange="mark('t4.1',this)">
+        <div class="test-id">4.1</div>
+        <div class="test-content">
+          <div class="test-desc">Click 周辺スポット on any hotel card</div>
+          <div class="test-expected">Panel opens with tabs: コンビニ · スーパー · レストラン · 居酒屋 · バー · 観光スポット</div>
+          <button class="add-note-btn" onclick="toggleNote('t4.1')">+ note</button>
+          <textarea class="note-input" id="note-t4.1" placeholder="Bug / observation…" onchange="saveNote('t4.1',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t4.2">
+        <input type="checkbox" onchange="mark('t4.2',this)">
+        <div class="test-id">4.2</div>
+        <div class="test-content">
+          <div class="test-desc">Click every tab one by one</div>
+          <div class="test-expected">Each tab shows spot list; count in tab label matches list length</div>
+          <button class="add-note-btn" onclick="toggleNote('t4.2')">+ note</button>
+          <textarea class="note-input" id="note-t4.2" placeholder="Bug / observation…" onchange="saveNote('t4.2',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t4.3">
+        <input type="checkbox" onchange="mark('t4.3',this)">
+        <div class="test-id">4.3</div>
+        <div class="test-content">
+          <div class="test-desc">First tab (コンビニ) on open — photos</div>
+          <div class="test-expected">Photos loaded immediately on first open (eager load for first tab only)</div>
+          <button class="add-note-btn" onclick="toggleNote('t4.3')">+ note</button>
+          <textarea class="note-input" id="note-t4.3" placeholder="Bug / observation…" onchange="saveNote('t4.3',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t4.4">
+        <input type="checkbox" onchange="mark('t4.4',this)">
+        <div class="test-id">4.4</div>
+        <div class="test-content">
+          <div class="test-desc">Switch to 観光スポット tab (last tab)</div>
+          <div class="test-expected">Photos load on click, not before (lazy loading — saves API cost)</div>
+          <button class="add-note-btn" onclick="toggleNote('t4.4')">+ note</button>
+          <textarea class="note-input" id="note-t4.4" placeholder="Bug / observation…" onchange="saveNote('t4.4',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t4.5">
+        <input type="checkbox" onchange="mark('t4.5',this)">
+        <div class="test-id">4.5</div>
+        <div class="test-content">
+          <div class="test-desc">Find a spot with no photo</div>
+          <div class="test-expected">"写真なし" placeholder — no broken image icon</div>
+          <button class="add-note-btn" onclick="toggleNote('t4.5')">+ note</button>
+          <textarea class="note-input" id="note-t4.5" placeholder="Bug / observation…" onchange="saveNote('t4.5',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t4.6">
+        <input type="checkbox" onchange="mark('t4.6',this)">
+        <div class="test-id">4.6</div>
+        <div class="test-content">
+          <div class="test-desc">Click 地図 ↗ link on a spot</div>
+          <div class="test-expected">Opens Google Maps in a new tab at the correct spot location</div>
+          <button class="add-note-btn" onclick="toggleNote('t4.6')">+ note</button>
+          <textarea class="note-input" id="note-t4.6" placeholder="Bug / observation…" onchange="saveNote('t4.6',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 5 ─────────────────────────────────────────── -->
+  <div class="section" id="s5">
+    <div class="section-header" onclick="toggleSection('s5')">
+      <div class="section-title">5 · AI推奨ホテル TOP 3</div>
+      <div class="section-meta"><span class="section-count" id="s5-count"></span><span class="chevron">▼</span></div>
+    </div>
+    <div class="section-body">
+      <div class="test-row" id="t5.1">
+        <input type="checkbox" onchange="mark('t5.1',this)">
+        <div class="test-id">5.1</div>
+        <div class="test-content">
+          <div class="test-desc">Click every tab: 総合 · コンビニ · スーパー · アクセス · コスパ · 評価 · グルメ · 駐車場</div>
+          <div class="test-expected">Each shows exactly 3 hotel cards (or fewer if &lt;3 results), no JS error</div>
+          <button class="add-note-btn" onclick="toggleNote('t5.1')">+ note</button>
+          <textarea class="note-input" id="note-t5.1" placeholder="Bug / observation…" onchange="saveNote('t5.1',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t5.2">
+        <input type="checkbox" onchange="mark('t5.2',this)">
+        <div class="test-id">5.2</div>
+        <div class="test-content">
+          <div class="test-desc">Click ルート確認 on a recommendation card</div>
+          <div class="test-expected">Route panel updates to that hotel</div>
+          <button class="add-note-btn" onclick="toggleNote('t5.2')">+ note</button>
+          <textarea class="note-input" id="note-t5.2" placeholder="Bug / observation…" onchange="saveNote('t5.2',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t5.3">
+        <input type="checkbox" onchange="mark('t5.3',this)">
+        <div class="test-id">5.3</div>
+        <div class="test-content">
+          <div class="test-desc">Click 周辺スポット on a recommendation card</div>
+          <div class="test-expected">Spots panel updates to that hotel</div>
+          <button class="add-note-btn" onclick="toggleNote('t5.3')">+ note</button>
+          <textarea class="note-input" id="note-t5.3" placeholder="Bug / observation…" onchange="saveNote('t5.3',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t5.4">
+        <input type="checkbox" onchange="mark('t5.4',this)">
+        <div class="test-id">5.4</div>
+        <div class="test-content">
+          <div class="test-desc">Search returning only 1 hotel, then check AI tabs</div>
+          <div class="test-expected">1 card shown per tab, no JS error, no empty/broken layout</div>
+          <button class="add-note-btn" onclick="toggleNote('t5.4')">+ note</button>
+          <textarea class="note-input" id="note-t5.4" placeholder="Bug / observation…" onchange="saveNote('t5.4',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 6 ─────────────────────────────────────────── -->
+  <div class="section" id="s6">
+    <div class="section-header" onclick="toggleSection('s6')">
+      <div class="section-title">6 · 現場周辺の病院 Panel</div>
+      <div class="section-meta"><span class="section-count" id="s6-count"></span><span class="chevron">▼</span></div>
+    </div>
+    <div class="section-body">
+      <div class="test-row" id="t6.1">
+        <input type="checkbox" onchange="mark('t6.1',this)">
+        <div class="test-id">6.1</div>
+        <div class="test-content">
+          <div class="test-desc">After a search, check hospital panel</div>
+          <div class="test-expected">Up to 5 hospitals listed with numbered white-on-green badges</div>
+          <button class="add-note-btn" onclick="toggleNote('t6.1')">+ note</button>
+          <textarea class="note-input" id="note-t6.1" placeholder="Bug / observation…" onchange="saveNote('t6.1',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t6.2">
+        <input type="checkbox" onchange="mark('t6.2',this)">
+        <div class="test-id">6.2</div>
+        <div class="test-content">
+          <div class="test-desc">Compare list numbers vs. map markers</div>
+          <div class="test-expected">Badge ① matches marker "1" on the hospital map — same hospital</div>
+          <button class="add-note-btn" onclick="toggleNote('t6.2')">+ note</button>
+          <textarea class="note-input" id="note-t6.2" placeholder="Bug / observation…" onchange="saveNote('t6.2',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t6.3">
+        <input type="checkbox" onchange="mark('t6.3',this)">
+        <div class="test-id">6.3</div>
+        <div class="test-content">
+          <div class="test-desc">Click 地図 ↗ next to a hospital</div>
+          <div class="test-expected">Opens Google Maps in new tab at correct hospital location</div>
+          <button class="add-note-btn" onclick="toggleNote('t6.3')">+ note</button>
+          <textarea class="note-input" id="note-t6.3" placeholder="Bug / observation…" onchange="saveNote('t6.3',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t6.4">
+        <input type="checkbox" onchange="mark('t6.4',this)">
+        <div class="test-id">6.4</div>
+        <div class="test-content">
+          <div class="test-desc">Search a rural location (few hospitals nearby)</div>
+          <div class="test-expected">Fewer results shown gracefully; no crash or blank panel</div>
+          <button class="add-note-btn" onclick="toggleNote('t6.4')">+ note</button>
+          <textarea class="note-input" id="note-t6.4" placeholder="Bug / observation…" onchange="saveNote('t6.4',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 7 ─────────────────────────────────────────── -->
+  <div class="section" id="s7">
+    <div class="section-header" onclick="toggleSection('s7')">
+      <div class="section-title">7 · 計画書を生成 (Document)</div>
+      <div class="section-meta"><span class="section-count" id="s7-count"></span><span class="chevron">▼</span></div>
+    </div>
+    <div class="section-body">
+      <div class="test-row" id="t7.1">
+        <input type="checkbox" onchange="mark('t7.1',this)">
+        <div class="test-id">7.1</div>
+        <div class="test-content">
+          <div class="test-desc">Click 計画書を生成 on any hotel card</div>
+          <div class="test-expected"><code>.docx</code> file downloads without error</div>
+          <button class="add-note-btn" onclick="toggleNote('t7.1')">+ note</button>
+          <textarea class="note-input" id="note-t7.1" placeholder="Bug / observation…" onchange="saveNote('t7.1',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t7.2">
+        <input type="checkbox" onchange="mark('t7.2',this)">
+        <div class="test-id">7.2</div>
+        <div class="test-content">
+          <div class="test-desc">Open the downloaded file in Word / LibreOffice</div>
+          <div class="test-expected">Content is readable, hotel name is correct, file is not corrupted</div>
+          <button class="add-note-btn" onclick="toggleNote('t7.2')">+ note</button>
+          <textarea class="note-input" id="note-t7.2" placeholder="Bug / observation…" onchange="saveNote('t7.2',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t7.3">
+        <input type="checkbox" onchange="mark('t7.3',this)">
+        <div class="test-id">7.3</div>
+        <div class="test-content">
+          <div class="test-desc">Try 計画書を生成 on a hotel with no photo</div>
+          <div class="test-expected">Document generates without error (no crash on missing image)</div>
+          <button class="add-note-btn" onclick="toggleNote('t7.3')">+ note</button>
+          <textarea class="note-input" id="note-t7.3" placeholder="Bug / observation…" onchange="saveNote('t7.3',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 8 ─────────────────────────────────────────── -->
+  <div class="section" id="s8">
+    <div class="section-header" onclick="toggleSection('s8')">
+      <div class="section-title">8 · My Mapsへ出力 (KMZ Export)</div>
+      <div class="section-meta"><span class="section-count" id="s8-count"></span><span class="chevron">▼</span></div>
+    </div>
+    <div class="section-body">
+      <div class="test-row" id="t8.1">
+        <input type="checkbox" onchange="mark('t8.1',this)">
+        <div class="test-id">8.1</div>
+        <div class="test-content">
+          <div class="test-desc">Click My Mapsへ出力 on any hotel card</div>
+          <div class="test-expected"><code>.kmz</code> file downloads without error</div>
+          <button class="add-note-btn" onclick="toggleNote('t8.1')">+ note</button>
+          <textarea class="note-input" id="note-t8.1" placeholder="Bug / observation…" onchange="saveNote('t8.1',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t8.2">
+        <input type="checkbox" onchange="mark('t8.2',this)">
+        <div class="test-id">8.2</div>
+        <div class="test-content">
+          <div class="test-desc">Import the KMZ into Google My Maps</div>
+          <div class="test-expected">Pins appear at correct locations with correct category icons</div>
+          <button class="add-note-btn" onclick="toggleNote('t8.2')">+ note</button>
+          <textarea class="note-input" id="note-t8.2" placeholder="Bug / observation…" onchange="saveNote('t8.2',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t8.3">
+        <input type="checkbox" onchange="mark('t8.3',this)">
+        <div class="test-id">8.3</div>
+        <div class="test-content">
+          <div class="test-desc">Check all icon types in the imported KMZ</div>
+          <div class="test-expected">Hotel, worksite, コンビニ, スーパー, レストラン, 居酒屋, バー, 観光スポット icons all render</div>
+          <button class="add-note-btn" onclick="toggleNote('t8.3')">+ note</button>
+          <textarea class="note-input" id="note-t8.3" placeholder="Bug / observation…" onchange="saveNote('t8.3',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 9 ─────────────────────────────────────────── -->
+  <div class="section" id="s9">
+    <div class="section-header" onclick="toggleSection('s9')">
+      <div class="section-title">9 · Edge Cases &amp; Stress</div>
+      <div class="section-meta"><span class="section-count" id="s9-count"></span><span class="chevron">▼</span></div>
+    </div>
+    <div class="section-body">
+      <div class="test-row" id="t9.1">
+        <input type="checkbox" onchange="mark('t9.1',this)">
+        <div class="test-id">9.1</div>
+        <div class="test-content">
+          <div class="test-desc">Click 検索する 5 times rapidly</div>
+          <div class="test-expected">No duplicate results, no JS errors — last search wins or lock prevents overlap</div>
+          <button class="add-note-btn" onclick="toggleNote('t9.1')">+ note</button>
+          <textarea class="note-input" id="note-t9.1" placeholder="Bug / observation…" onchange="saveNote('t9.1',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t9.2">
+        <input type="checkbox" onchange="mark('t9.2',this)">
+        <div class="test-id">9.2</div>
+        <div class="test-content">
+          <div class="test-desc">Switch between spot tabs rapidly (click all 6 tabs quickly)</div>
+          <div class="test-expected">No JS errors in console; correct tab content shown</div>
+          <button class="add-note-btn" onclick="toggleNote('t9.2')">+ note</button>
+          <textarea class="note-input" id="note-t9.2" placeholder="Bug / observation…" onchange="saveNote('t9.2',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t9.3">
+        <input type="checkbox" onchange="mark('t9.3',this)">
+        <div class="test-id">9.3</div>
+        <div class="test-content">
+          <div class="test-desc">Search → select hotel → search again → select different hotel</div>
+          <div class="test-expected">Clean state: no stale route/spots from previous selection</div>
+          <button class="add-note-btn" onclick="toggleNote('t9.3')">+ note</button>
+          <textarea class="note-input" id="note-t9.3" placeholder="Bug / observation…" onchange="saveNote('t9.3',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t9.4">
+        <input type="checkbox" onchange="mark('t9.4',this)">
+        <div class="test-id">9.4</div>
+        <div class="test-content">
+          <div class="test-desc">Open DevTools Console before searching, run a full flow</div>
+          <div class="test-expected">No red JS errors during search, card click, route, spots, document, KMZ</div>
+          <button class="add-note-btn" onclick="toggleNote('t9.4')">+ note</button>
+          <textarea class="note-input" id="note-t9.4" placeholder="Bug / observation…" onchange="saveNote('t9.4',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t9.5">
+        <input type="checkbox" onchange="mark('t9.5',this)">
+        <div class="test-id">9.5</div>
+        <div class="test-content">
+          <div class="test-desc">Narrow browser window to ~900 px wide</div>
+          <div class="test-expected">Layout doesn't break (may need horizontal scroll — that's acceptable)</div>
+          <button class="add-note-btn" onclick="toggleNote('t9.5')">+ note</button>
+          <textarea class="note-input" id="note-t9.5" placeholder="Bug / observation…" onchange="saveNote('t9.5',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section 10 ────────────────────────────────────────── -->
+  <div class="section" id="s10">
+    <div class="section-header" onclick="toggleSection('s10')">
+      <div class="section-title">10 · API / Billing Spot Checks</div>
+      <div class="section-meta"><span class="section-count" id="s10-count"></span><span class="chevron">▼</span></div>
+    </div>
+    <div class="section-body">
+      <div class="test-row" id="t10.1">
+        <input type="checkbox" onchange="mark('t10.1',this)">
+        <div class="test-id">10.1</div>
+        <div class="test-content">
+          <div class="test-desc">Open DevTools Network tab, run a search, inspect requests</div>
+          <div class="test-expected">No duplicate calls to <code>/api/poi/hospitals</code>, <code>/api/liteapi-hotels</code>, or <code>/api/routes</code></div>
+          <button class="add-note-btn" onclick="toggleNote('t10.1')">+ note</button>
+          <textarea class="note-input" id="note-t10.1" placeholder="Bug / observation…" onchange="saveNote('t10.1',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t10.2">
+        <input type="checkbox" onchange="mark('t10.2',this)">
+        <div class="test-id">10.2</div>
+        <div class="test-content">
+          <div class="test-desc">Open a spot panel, switch tabs back and forth 3×</div>
+          <div class="test-expected">No repeat photo requests — each category's photos fetch only once (lazy cache)</div>
+          <button class="add-note-btn" onclick="toggleNote('t10.2')">+ note</button>
+          <textarea class="note-input" id="note-t10.2" placeholder="Bug / observation…" onchange="saveNote('t10.2',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="test-row" id="t10.3">
+        <input type="checkbox" onchange="mark('t10.3',this)">
+        <div class="test-id">10.3</div>
+        <div class="test-content">
+          <div class="test-desc">Click 周辺スポット for the same hotel twice</div>
+          <div class="test-expected">Second click re-renders panel but does not fire a new <code>/api/poi/hotel-spots</code> call (or confirms it does and is acceptable)</div>
+          <button class="add-note-btn" onclick="toggleNote('t10.3')">+ note</button>
+          <textarea class="note-input" id="note-t10.3" placeholder="Bug / observation…" onchange="saveNote('t10.3',this.value)" rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    docs/test-plan.html · Hotel Finder internal QA · Progress saved in browser localStorage
+  </footer>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'hf-test-plan-v1';
+
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+}
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+const ALL_IDS = [
+  't1.1','t1.2','t1.3','t1.4','t1.5','t1.6','t1.7','t1.8','t1.9',
+  't2.1','t2.2','t2.3','t2.4','t2.5','t2.6','t2.7',
+  't3.1','t3.2','t3.3','t3.4',
+  't4.1','t4.2','t4.3','t4.4','t4.5','t4.6',
+  't5.1','t5.2','t5.3','t5.4',
+  't6.1','t6.2','t6.3','t6.4',
+  't7.1','t7.2','t7.3',
+  't8.1','t8.2','t8.3',
+  't9.1','t9.2','t9.3','t9.4','t9.5',
+  't10.1','t10.2','t10.3'
+];
+
+const SECTION_IDS = {
+  s1: ['t1.1','t1.2','t1.3','t1.4','t1.5','t1.6','t1.7','t1.8','t1.9'],
+  s2: ['t2.1','t2.2','t2.3','t2.4','t2.5','t2.6','t2.7'],
+  s3: ['t3.1','t3.2','t3.3','t3.4'],
+  s4: ['t4.1','t4.2','t4.3','t4.4','t4.5','t4.6'],
+  s5: ['t5.1','t5.2','t5.3','t5.4'],
+  s6: ['t6.1','t6.2','t6.3','t6.4'],
+  s7: ['t7.1','t7.2','t7.3'],
+  s8: ['t8.1','t8.2','t8.3'],
+  s9: ['t9.1','t9.2','t9.3','t9.4','t9.5'],
+  s10: ['t10.1','t10.2','t10.3']
+};
+
+function mark(id, checkbox) {
+  const state = loadState();
+  state[id] = state[id] || {};
+  state[id].done = checkbox.checked;
+  saveState(state);
+  applyRow(id, checkbox.checked);
+  updateProgress();
+  updateSectionCounts();
+}
+
+function applyRow(id, done) {
+  const row = document.getElementById(id);
+  if (!row) return;
+  row.classList.toggle('done', done);
+  const cb = row.querySelector('input[type=checkbox]');
+  if (cb) cb.checked = done;
+}
+
+function toggleNote(id) {
+  const ta = document.getElementById('note-' + id);
+  ta.classList.toggle('open');
+  if (ta.classList.contains('open')) ta.focus();
+}
+
+function saveNote(id, value) {
+  const state = loadState();
+  state[id] = state[id] || {};
+  state[id].note = value;
+  saveState(state);
+}
+
+function updateProgress() {
+  const state = loadState();
+  const done = ALL_IDS.filter(id => state[id] && state[id].done).length;
+  const total = ALL_IDS.length;
+  const pct = total ? (done / total * 100) : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${done} / ${total} tests passed`;
+}
+
+function updateSectionCounts() {
+  const state = loadState();
+  Object.entries(SECTION_IDS).forEach(([sid, ids]) => {
+    const done = ids.filter(id => state[id] && state[id].done).length;
+    const el = document.getElementById(sid + '-count');
+    if (el) el.textContent = `${done}/${ids.length}`;
+  });
+}
+
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+function expandAll() {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('collapsed'));
+}
+function collapseAll() {
+  document.querySelectorAll('.section').forEach(s => s.classList.add('collapsed'));
+}
+function resetAll() {
+  if (!confirm('Reset all checkboxes and notes?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  ALL_IDS.forEach(id => applyRow(id, false));
+  document.querySelectorAll('.note-input').forEach(ta => { ta.value = ''; ta.classList.remove('open'); });
+  updateProgress();
+  updateSectionCounts();
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('export-toast');
+  toast.textContent = msg;
+  toast.classList.add('visible');
+  setTimeout(() => toast.classList.remove('visible'), 2500);
+}
+
+function exportResults() {
+  const state = loadState();
+  const done = ALL_IDS.filter(id => state[id] && state[id].done).length;
+  const total = ALL_IDS.length;
+  const lines = ['=== Hotel Finder Beta Test Plan ===', `Progress: ${done} / ${total} tests passed`, ''];
+
+  Object.entries(SECTION_IDS).forEach(([sid, ids]) => {
+    const titleEl = document.querySelector(`#${sid} .section-title`);
+    lines.push(`── ${titleEl ? titleEl.textContent : sid} ──`);
+    ids.forEach(id => {
+      const s = state[id] || {};
+      const escaped = id.replace('.', '\\.');
+      const desc = document.querySelector(`#${escaped} .test-desc`)?.textContent?.trim() || id;
+      const label = document.querySelector(`#${escaped} .test-id`)?.textContent?.trim() || '';
+      lines.push(`${s.done ? '[✓]' : '[ ]'} ${label}  ${desc}`);
+      if (s.note && s.note.trim()) lines.push(`    Note: ${s.note.trim()}`);
+    });
+    lines.push('');
+  });
+
+  const text = lines.join('\n');
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('Copied to clipboard!'))
+    .catch(() => { showToast('Copy failed — check console'); console.log(text); });
+}
+
+// Restore state on load
+(function init() {
+  const state = loadState();
+  ALL_IDS.forEach(id => {
+    const s = state[id] || {};
+    if (s.done) applyRow(id, true);
+    if (s.note) {
+      const ta = document.getElementById('note-' + id);
+      if (ta) ta.value = s.note;
+    }
+  });
+  updateProgress();
+  updateSectionCounts();
+})();
+</script>
+</body>
+</html>

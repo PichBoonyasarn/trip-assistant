@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>計画書アシスタント</title>
+<style>
+  :root {
+    --ink: #1f2a24;
+    --paper: #f6f3ec;
+    --moss: #4a6354;
+    --moss-deep: #2f4338;
+    --clay: #c4683f;
+    --line: #d8d2c4;
+    --mono: 'JetBrains Mono', 'Courier New', monospace;
+    --serif: 'Georgia', 'Iowan Old Style', serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 40px 24px 80px; }
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 20px; margin-bottom: 32px; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--moss); margin-bottom: 8px; }
+  h1 { font-family: var(--serif); font-size: 38px; font-weight: 400; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .sub { color: #6b6256; font-size: 13px; max-width: 640px; }
+
+  /* ── Grid layouts ─────────────────────────────────────────── */
+  .top-layout      { display: grid; grid-template-columns: 4fr 6fr; gap: 20px; margin-bottom: 28px; align-items: stretch; }
+  .routes-layout   { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; align-items: stretch; }
+  .bottom-layout   { display: grid; grid-template-columns: 7fr 3fr; gap: 20px; margin-bottom: 28px; align-items: stretch; }
+  .hospital-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; align-items: stretch; }
+  .top-layout > .panel, .routes-layout > .panel, .bottom-layout > .panel, .hospital-layout > .panel { margin-bottom: 0; }
+  #hospitalMap { height: 100%; min-height: 350px; width: 100%; }
+
+  .panel { border: 1px solid var(--line); background: #fffdf8; padding: 24px; margin-bottom: 28px; }
+  .panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em; margin: 0 0 16px; color: var(--moss-deep); font-weight: 600; }
+
+  .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--moss-deep); font-weight: 600; margin-bottom: 10px; display: block; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+  .section-block { margin-bottom: 20px; }
+  .section-block:last-of-type { margin-bottom: 0; }
+
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .grid.full { grid-template-columns: 1fr; }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+
+  label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: #8a8071; margin-bottom: 6px; }
+  input {
+    width: 100%; padding: 10px 12px; font-family: var(--mono); font-size: 14px;
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 2px;
+  }
+  input:focus { outline: 2px solid var(--moss); outline-offset: 1px; }
+  input::placeholder { color: #b3aa9b; }
+
+  .checkbox-row { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+  .checkbox-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink); cursor: pointer; }
+  .checkbox-item input[type="checkbox"] { width: auto; cursor: pointer; }
+
+  .actions { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; align-items: center; }
+  button {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 12px 22px; border: none;
+    cursor: pointer; border-radius: 2px; transition: transform 0.08s ease, background 0.15s ease;
+  }
+  button:active { transform: translateY(1px); }
+  .btn-primary { background: var(--moss-deep); color: #fff; }
+  .btn-primary:hover { background: var(--moss); }
+  .btn-primary:disabled { background: #b9c2bb; cursor: not-allowed; }
+  .btn-ghost { background: transparent; color: var(--moss-deep); border: 1px solid var(--moss-deep); }
+  .btn-ghost:hover { background: var(--moss-deep); color: #fff; }
+  .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; border-color: #b9c2bb; color: #b9c2bb; }
+
+  .status { font-size: 12px; color: var(--clay); margin-top: 12px; min-height: 16px; }
+  .status.ok { color: var(--moss); }
+
+  .key-note { font-size: 11px; color: #9a9080; margin-top: 14px; line-height: 1.6; border-left: 2px solid var(--line); padding-left: 12px; }
+
+  /* ── Panel headings ───────────────────────────────────────── */
+  .panel-title {
+    font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--moss-deep); margin: 0 0 16px; font-weight: 600;
+  }
+
+  /* ── Hospital list + numbered badges ─────────────────────── */
+  .hospital-count { font-size: 12px; color: var(--moss-deep); font-weight: 600; margin-bottom: 10px; }
+  .hospital-list { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+  .hospital-list li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .hospital-list li:last-child { border-bottom: none; }
+  .hospital-list li span:not(.hospital-num) { color: #888; font-size: 11px; }
+  .hospital-list li a { margin-left: auto; color: var(--clay); text-decoration: none; border-bottom: 1px dotted var(--clay); font-size: 11px; }
+  .hospital-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--moss-deep); color: #fff;
+    font-size: 11px; font-weight: 600; flex-shrink: 0;
+  }
+
+  /* ── Route leg ───────────────────────────────────────────── */
+  .route-leg { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .route-leg:last-child { border-bottom: none; }
+  .route-leg-title { font-size: 13px; font-weight: 600; color: var(--moss-deep); }
+  .route-leg-meta { font-size: 11px; color: #888; margin: 4px 0 12px; }
+  .route-stops { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+  .route-stop-group strong { font-size: 11px; color: var(--moss-deep); }
+  .parking-badge { font-size: 10px; color: var(--moss-deep); border: 1px solid var(--moss); padding: 1px 6px; border-radius: 2px; }
+
+  /* ── Spot tabs ───────────────────────────────────────────── */
+  .spot-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+  .spot-tab {
+    font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 6px 10px; border: 1px solid var(--line); background: transparent;
+    color: var(--moss-deep); cursor: pointer; border-radius: 2px; transition: all 0.2s ease;
+  }
+  .spot-tab:hover { background: var(--moss-deep); color: white; }
+  .spot-tab.active { background: var(--moss-deep); color: white; font-weight: 600; }
+  .spot-content { display: none; }
+  .spot-content.active { display: block; }
+  .btn-route { padding: 6px 10px; font-size: 10px; white-space: nowrap; }
+
+  .ai-loading { text-align: center; padding: 40px 20px; color: #999; }
+  .ai-empty { text-align: center; padding: 40px 20px; color: #b3aa9b; font-size: 11px; }
+
+  /* ── Photos ──────────────────────────────────────────────── */
+  .hotel-photo { width: 80px; height: 60px; object-fit: cover; border-radius: 2px; border: 1px solid var(--line); }
+  .no-photo { width: 80px; height: 60px; background: #e8e4d8; border-radius: 2px; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 10px; color: #9a9080; }
+  .spot-thumb { width: 50px; height: 40px; }
+  .no-photo.spot-thumb { font-size: 8px; }
+  .spot-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .spot-info a { margin-left: 0 !important; }
+  .spot-desc { color: var(--moss-deep) !important; font-style: italic; }
+
+  /* ── Hotel info summary card ─────────────────────────────── */
+  .hotel-info-name { font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.3; margin-bottom: 14px; }
+  .hotel-info-row { font-size: 14px; color: #6b6256; display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+  .hotel-info-address { font-size: 13px; color: #9a9080; line-height: 1.6; margin-top: 10px; }
+
+  footer { margin-top: 40px; font-size: 11px; color: #b3aa9b; text-align: center; }
+
+  /* suppress Google Maps' cooperative-mode "Use Ctrl+scroll to zoom" overlay */
+  .gm-style-moc { display: none !important; }
+
+  /* Responsive: collapse all layouts to single column on tablet/mobile */
+  @media (max-width: 900px) {
+    .top-layout, .routes-layout, .bottom-layout, .hospital-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Mobile */
+  @media (max-width: 600px) {
+    input, select { font-size: 16px !important; }
+    #map { min-height: 250px; }
+    .spot-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; }
+    .spot-tab { flex-shrink: 0; }
+    button { min-height: 44px; }
+    .btn-primary { padding: 14px 22px; }
+    h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">現地調査 · 計画書作成</div>
+    <h1>計画書アシスタント</h1>
+    <p class="sub">予約済みのホテルを入力すると、現場周辺の病院・ルート・ホテル周辺スポットを取得し、計画書（.docx）を生成します。</p>
+  </header>
+
+  <!-- Row 1: Input form (left) | Hotel info card (right) -->
+  <div class="top-layout">
+
+    <div class="panel">
+      <!-- 現場 -->
+      <div class="section-block">
+        <span class="section-label">現場</span>
+        <div class="grid full">
+          <div>
+            <label for="worksiteAddress">住所または場所名</label>
+            <input id="worksiteAddress" type="text" placeholder="例: 京都駅、東京都渋谷区、大阪市北区">
+          </div>
+        </div>
+        <div class="grid" style="margin-top:12px;">
+          <div>
+            <label for="worksiteLat">緯度（任意）</label>
+            <input id="worksiteLat" type="text" placeholder="35.0116">
+          </div>
+          <div>
+            <label for="worksiteLng">経度（任意）</label>
+            <input id="worksiteLng" type="text" placeholder="135.7681">
+          </div>
+        </div>
+      </div>
+
+      <!-- 出発地 -->
+      <div class="section-block" style="border-top:1px solid var(--line); padding-top:16px;">
+        <span class="section-label">出発地</span>
+        <div class="checkbox-row">
+          <label class="checkbox-item"><input type="checkbox" id="useCustomStartPoint"> 出発地を会社住所以外にする（空港・港・新幹線駅など）</label>
+        </div>
+        <div id="companyAddressRemark" style="font-size:11px;color:#8a8071;margin-top:6px;">出発地: 会社住所（<span id="companyAddressRemarkText">読み込み中…</span>）</div>
+        <div id="companyAddressFieldWrap" style="display:none; margin-top:10px;">
+          <label for="companyAddress">出発地の住所</label>
+          <input id="companyAddress" type="text" placeholder="例: 東京都千代田区...">
+        </div>
+      </div>
+
+      <!-- ホテル -->
+      <div class="section-block" style="border-top:1px solid var(--line); padding-top:16px;">
+        <span class="section-label">ホテル</span>
+        <div class="grid full">
+          <div>
+            <label for="hotelName">ホテル名</label>
+            <input id="hotelName" type="text" placeholder="例: スーパーホテル京都駅前">
+          </div>
+        </div>
+        <div class="grid full" style="margin-top:12px;">
+          <div>
+            <label for="hotelAddress">住所（任意 — 空欄の場合はホテル名から自動検索）</label>
+            <input id="hotelAddress" type="text" placeholder="例: 京都府京都市下京区...（空欄ならホテル名から自動検索）">
+          </div>
+        </div>
+        <div class="grid" style="margin-top:12px;">
+          <div>
+            <label for="hotelLat">緯度（任意）</label>
+            <input id="hotelLat" type="text" placeholder="35.0116">
+          </div>
+          <div>
+            <label for="hotelLng">経度（任意）</label>
+            <input id="hotelLng" type="text" placeholder="135.7681">
+          </div>
+          <div>
+            <label for="hotelPhone">電話番号（任意）</label>
+            <input id="hotelPhone" type="text" placeholder="075-000-0000">
+          </div>
+          <div>
+            <label for="hotelPrice">料金（任意・自由記述）</label>
+            <input id="hotelPrice" type="text" placeholder="例: ¥8,000/泊">
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-primary" id="fetchInfoBtn">情報を取得</button>
+      </div>
+      <div class="status" id="status"></div>
+    </div>
+
+    <!-- Hotel info card (always visible, placeholder until fetch) -->
+    <div class="panel" id="hotelCardPanel">
+      <h2>ホテル情報</h2>
+      <div id="hotelCardContent">
+        <div class="ai-empty">情報を取得するとホテルの詳細がここに表示されます</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Row 2: Route 出発地→現場 (left) | Route 現場→ホテル (right) -->
+  <div class="routes-layout">
+    <div class="panel" id="startToWorksitePanelWrap">
+      <div class="panel-title">ルート: 出発地 → 現場</div>
+      <div id="startToWorksiteMap" style="height:300px; display:none; border:1px solid var(--line); margin-bottom:20px;"></div>
+      <div id="startToWorksitePanel"><div class="ai-empty">情報を取得するとルートが表示されます</div></div>
+    </div>
+    <div class="panel" id="routePanelWrap">
+      <div class="panel-title">ルート: 現場 → <span id="routePanelHotelName">ホテル</span></div>
+      <div id="routeMap" style="height:300px; display:none; border:1px solid var(--line); margin-bottom:20px;"></div>
+      <div id="routePanel"><div class="ai-empty">情報を取得するとルートが表示されます</div></div>
+    </div>
+  </div>
+
+  <!-- Row 3: Hotel spots (left 70%) | Document (right 30%) -->
+  <div class="bottom-layout">
+    <div class="panel" id="hotelSpotsPanelWrap">
+      <div class="panel-title">周辺スポット: <span id="hotelSpotsPanelHotelName">ホテル</span></div>
+      <div id="hotelSpotsPanel"><div class="ai-empty">情報を取得すると周辺スポットが表示されます</div></div>
+    </div>
+    <div class="panel">
+      <h2>計画書</h2>
+      <div class="actions">
+        <button class="btn-primary" id="generateDocBtn" disabled>計画書を生成</button>
+      </div>
+      <div class="key-note">
+        「情報を取得」で現場・ホテルの周辺情報を読み込んだ後、計画書（.docx）を生成できます。
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: Hospital list (left) | Hospital map (right) -->
+  <div class="hospital-layout">
+    <div class="panel" id="hospitalPanelWrap">
+      <div class="panel-title">現場周辺の病院</div>
+      <div id="hospitalPanel"><div class="ai-empty">情報を取得すると表示されます</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">病院マップ</div>
+      <div id="hospitalMap"></div>
+    </div>
+  </div>
+
+  <footer>hotel-info</footer>
+</div>
+
+<script src="js/poi.js"></script>
+<script src="js/routePlanning.js"></script>
+<script src="js/documentGen.js"></script>
+<script>
+let scriptLoaded = false;
+let googleMapsKey = '';
+let defaultCompanyAddress = '';
+let companyGeocodedAddress = null;
+let companyLat = null;
+let companyLng = null;
+
+let worksiteLat = null;
+let worksiteLng = null;
+let worksitePlaceId = null;
+
+let hotelLat = null;
+let hotelLng = null;
+
+let lastHospitals = [];
+let lastStartToWorksiteLeg = null;
+let cachedRouteToHotel = null;
+let cachedHotelSpots = null;
+
+function setStatus(msg, ok) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status' + (ok ? ' ok' : '');
+}
+
+(async function init() {
+  try {
+    setStatus('設定を読み込み中…');
+    const res = await fetch('/api/config');
+    const config = await res.json();
+    googleMapsKey = config.googleMapsKey;
+    defaultCompanyAddress = config.companyAddress || '';
+    document.getElementById('companyAddress').value = defaultCompanyAddress;
+    document.getElementById('companyAddressRemarkText').textContent =
+      defaultCompanyAddress || '未設定（.envのCOMPANY_ADDRESSを確認してください）';
+    if (googleMapsKey) {
+      await loadMapsScript(googleMapsKey);
+      setStatus('');
+    } else {
+      setStatus('Google Maps APIキーがサーバーに設定されていません。.envを確認してください。');
+    }
+  } catch (err) {
+    setStatus('設定の読み込みに失敗しました: ' + err.message);
+  }
+})();
+
+function loadMapsScript(key) {
+  return new Promise((resolve, reject) => {
+    if (scriptLoaded) return resolve();
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&language=ja`;
+    script.onload = () => { scriptLoaded = true; resolve(); };
+    script.onerror = () => reject(new Error('Google Mapsスクリプトの読み込みに失敗しました。APIキーをご確認ください。'));
+    document.head.appendChild(script);
+  });
+}
+
+async function geocodeAddress(address, notFoundMessage) {
+  const geocoder = new google.maps.Geocoder();
+  return new Promise((resolve, reject) => {
+    geocoder.geocode({ address }, (results, status) => {
+      if (status === 'OK' && results[0]) {
+        const loc = results[0].geometry.location;
+        resolve({ lat: loc.lat(), lng: loc.lng(), placeId: results[0].place_id ?? null });
+      } else {
+        reject(new Error(notFoundMessage || '住所が見つかりませんでした。'));
+      }
+    });
+  });
+}
+
+async function ensureCompanyLocation() {
+  const useCustom = document.getElementById('useCustomStartPoint').checked;
+  const addressInput = useCustom
+    ? document.getElementById('companyAddress').value.trim()
+    : defaultCompanyAddress;
+  if (!addressInput) {
+    throw new Error(useCustom
+      ? '出発地の住所を入力してください。'
+      : '会社住所が設定されていません（.envのCOMPANY_ADDRESSを確認してください）。');
+  }
+  if (companyGeocodedAddress === addressInput && companyLat != null) {
+    return { lat: companyLat, lng: companyLng };
+  }
+  const loc = await geocodeAddress(addressInput, '会社住所が見つかりませんでした。');
+  companyGeocodedAddress = addressInput;
+  companyLat = loc.lat;
+  companyLng = loc.lng;
+  return { lat: companyLat, lng: companyLng };
+}
+
+const START_TO_WORKSITE_STOP_OPTS = { stopTypes: ['convenience_store'], stopMode: 'destination', stopLimit: 2 };
+const START_TO_WORKSITE_STOP_CATEGORIES = [
+  { key: 'convenienceStores', icon: '🏪', label: 'コンビニ（現場周辺）', emptyLabel: '見つかりませんでした' },
+];
+
+async function loadStartToWorksiteRoute(includeStops) {
+  if (worksiteLat == null || worksiteLng == null) return;
+  const panel = document.getElementById('startToWorksitePanel');
+  if (!includeStops) panel.innerHTML = '<div class="ai-empty">ルートを検索中…</div>';
+  try {
+    const company = await ensureCompanyLocation();
+    const worksite = { lat: worksiteLat, lng: worksiteLng };
+    const leg = await fetchRouteLeg(company, worksite, includeStops, START_TO_WORKSITE_STOP_OPTS);
+    lastStartToWorksiteLeg = leg;
+    renderLegPanel(leg, 'startToWorksitePanel', '出発地', '現場', () => loadStartToWorksiteRoute(true), {
+      stopCategories: START_TO_WORKSITE_STOP_CATEGORIES,
+      stopButtonLabel: '現場周辺のコンビニを検索（最寄り2件）',
+    });
+    renderLegMap(leg, company, worksite, '出発地', '現場', 'startToWorksiteMap');
+  } catch (err) {
+    panel.innerHTML = `<div class="ai-empty">${err.message}</div>`;
+  }
+}
+
+async function loadRouteToHotel(includeStops) {
+  if (worksiteLat == null || hotelLat == null) return;
+  const panel = document.getElementById('routePanel');
+  const hotelName = document.getElementById('hotelName').value.trim() || 'ホテル';
+  document.getElementById('routePanelHotelName').textContent = hotelName;
+  if (!includeStops) panel.innerHTML = '<div class="ai-empty">ルートを検索中…</div>';
+  const worksite = { lat: worksiteLat, lng: worksiteLng };
+  const hotelLoc = { lat: hotelLat, lng: hotelLng };
+  const leg = await fetchRouteLeg(worksite, hotelLoc, includeStops);
+  cachedRouteToHotel = leg;
+  renderLegPanel(leg, 'routePanel', '現場', hotelName, () => loadRouteToHotel(true));
+  renderLegMap(leg, worksite, hotelLoc, '現場', hotelName, 'routeMap');
+}
+
+async function loadHotelSpots() {
+  if (hotelLat == null || hotelLng == null) return;
+  const panel = document.getElementById('hotelSpotsPanel');
+  const hotelName = document.getElementById('hotelName').value.trim() || 'ホテル';
+  document.getElementById('hotelSpotsPanelHotelName').textContent = hotelName;
+  panel.innerHTML = '<div class="ai-empty">周辺スポットを検索中…</div>';
+  const spots = await fetchHotelSpots(hotelLat, hotelLng);
+  cachedHotelSpots = spots;
+  renderHotelSpotsPanel(spots, 'hotelSpotsPanel');
+}
+
+async function resolveWorksite() {
+  const manualLat = parseFloat(document.getElementById('worksiteLat').value);
+  const manualLng = parseFloat(document.getElementById('worksiteLng').value);
+  if (!isNaN(manualLat) && !isNaN(manualLng)) {
+    worksiteLat = manualLat; worksiteLng = manualLng;
+    worksitePlaceId = null; // raw coordinates — no place to fetch a photo for
+    return;
+  }
+  const addr = document.getElementById('worksiteAddress').value.trim();
+  if (!addr) throw new Error('現場の住所または緯度・経度を入力してください。');
+  const loc = await geocodeAddress(addr, '現場の住所が見つかりませんでした。');
+  worksiteLat = loc.lat; worksiteLng = loc.lng;
+  worksitePlaceId = loc.placeId ?? null; // set when geocoder resolved a named place
+}
+
+async function resolveHotel() {
+  const name = document.getElementById('hotelName').value.trim();
+  if (!name) throw new Error('ホテル名を入力してください。');
+
+  const manualLat = parseFloat(document.getElementById('hotelLat').value);
+  const manualLng = parseFloat(document.getElementById('hotelLng').value);
+  const addr = document.getElementById('hotelAddress').value.trim();
+
+  if (!isNaN(manualLat) && !isNaN(manualLng)) {
+    hotelLat = manualLat; hotelLng = manualLng;
+    return;
+  }
+  if (addr) {
+    const loc = await geocodeAddress(addr, 'ホテルの住所が見つかりませんでした。');
+    hotelLat = loc.lat; hotelLng = loc.lng;
+    return;
+  }
+  const found = await fetchHotelByName(name, worksiteLat, worksiteLng);
+  if (!found) throw new Error('ホテル名から住所を自動検索できませんでした。住所を直接入力してください。');
+  document.getElementById('hotelAddress').value = found.address;
+  hotelLat = found.lat; hotelLng = found.lng;
+  const phoneField = document.getElementById('hotelPhone');
+  if (!phoneField.value.trim() && found.phone) phoneField.value = found.phone;
+}
+
+function showHotelCard() {
+  const name    = document.getElementById('hotelName').value.trim()  || '—';
+  const address = document.getElementById('hotelAddress').value.trim() || '—';
+  const phone   = document.getElementById('hotelPhone').value.trim();
+  const price   = document.getElementById('hotelPrice').value.trim();
+  document.getElementById('hotelCardContent').innerHTML = `
+    <div class="hotel-info-name">${name}</div>
+    <div class="hotel-info-row">
+      ${phone ? `<span>📞 ${phone}</span>` : ''}
+      ${price ? `<span>💴 ${price}</span>` : ''}
+    </div>
+    <div class="hotel-info-address">📍 ${address}</div>`;
+}
+
+function renderHospitalMap(hospitals) {
+  const mapEl = document.getElementById('hospitalMap');
+  if (!mapEl || !hospitals.length) return;
+  const map = new google.maps.Map(mapEl, {
+    center: { lat: worksiteLat, lng: worksiteLng },
+    zoom: 12,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+  });
+  new google.maps.Marker({
+    position: { lat: worksiteLat, lng: worksiteLng },
+    map,
+    title: '現場',
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 10,
+      fillColor: '#c4683f',
+      fillOpacity: 1,
+      strokeColor: '#fff',
+      strokeWeight: 2,
+    },
+  });
+  hospitals.slice(0, 5).forEach((h, i) => {
+    if (h.lat == null || h.lng == null) return;
+    const marker = new google.maps.Marker({
+      position: { lat: h.lat, lng: h.lng },
+      map,
+      label: { text: String(i + 1), color: '#fff', fontSize: '11px', fontWeight: '600' },
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 12,
+        fillColor: '#2f4338',
+        fillOpacity: 1,
+        strokeColor: '#fff',
+        strokeWeight: 2,
+      },
+      title: h.name,
+    });
+    const info = new google.maps.InfoWindow({
+      content: `<div style="font-size:12px;font-family:sans-serif;"><strong>${h.name}</strong><br>${h.distance != null ? h.distance + ' km' : ''}</div>`,
+    });
+    marker.addListener('click', () => info.open(map, marker));
+  });
+}
+
+async function fetchInfo() {
+  if (!scriptLoaded) return setStatus('Google Mapsの読み込みが完了していません。しばらくお待ちください。');
+
+  const btn = document.getElementById('fetchInfoBtn');
+  btn.disabled = true;
+  lastHospitals = [];
+  lastStartToWorksiteLeg = null;
+  cachedRouteToHotel = null;
+  cachedHotelSpots = null;
+  document.getElementById('startToWorksitePanel').innerHTML = '<div class="ai-empty">ルートを検索中…</div>';
+  document.getElementById('routePanel').innerHTML = '<div class="ai-empty">ルートを検索中…</div>';
+  document.getElementById('hotelSpotsPanel').innerHTML = '<div class="ai-empty">周辺スポットを検索中…</div>';
+  document.getElementById('hospitalPanel').innerHTML = '<div class="ai-empty">病院を検索中…</div>';
+  document.getElementById('hotelCardContent').innerHTML = '<div class="ai-empty">ホテル情報を確認中…</div>';
+  document.getElementById('generateDocBtn').disabled = true;
+
+  try {
+    setStatus('現場の住所を確認中…');
+    await resolveWorksite();
+
+    setStatus('ホテルの住所を確認中…');
+    await resolveHotel();
+    showHotelCard();
+
+    setStatus('出発地から現場までのルートを確認中…');
+    await loadStartToWorksiteRoute(false);
+
+    setStatus('現場周辺の病院を検索中…');
+    lastHospitals = await fetchWorksiteHospitals(worksiteLat, worksiteLng);
+    renderHospitalPanel(lastHospitals, 'hospitalPanel');
+    renderHospitalMap(lastHospitals);
+
+    setStatus('現場からホテルまでのルートを確認中…');
+    await loadRouteToHotel(false);
+
+    setStatus('周辺スポットを検索中…');
+    await loadHotelSpots();
+
+    setStatus('情報を取得しました。', true);
+    document.getElementById('generateDocBtn').disabled = false;
+  } catch (err) {
+    setStatus(err.message || '情報の取得に失敗しました。');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('useCustomStartPoint').addEventListener('change', (e) => {
+  const fieldWrap = document.getElementById('companyAddressFieldWrap');
+  const remark = document.getElementById('companyAddressRemark');
+  if (e.target.checked) {
+    fieldWrap.style.display = 'block';
+    remark.style.display = 'none';
+    document.getElementById('companyAddress').focus();
+  } else {
+    fieldWrap.style.display = 'none';
+    remark.style.display = 'block';
+  }
+});
+
+document.getElementById('fetchInfoBtn').addEventListener('click', fetchInfo);
+document.getElementById('generateDocBtn').addEventListener('click', generateDocument);
+</script>
+</body>
+</html>

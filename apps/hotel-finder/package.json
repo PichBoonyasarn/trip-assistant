@@ -1,0 +1,38 @@
+{
+  "name": "hotel-finder",
+  "version": "1.0.0",
+  "description": "Business hotel search tool",
+  "main": "main.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.internal.hotel-finder",
+    "productName": "Hotel Finder",
+    "win": {
+      "target": [{ "target": "portable", "arch": ["x64"] }],
+      "icon": "assets/icon.png"
+    },
+    "extraResources": [{ "from": ".env", "to": ".env" }],
+    "files": [
+      "**/*",
+      "!dist/**",
+      "!*.zip",
+      "!backups/**"
+    ]
+  },
+  "dependencies": {
+    "docx": "^9.0.2",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.0",
+    "fast-xml-parser": "^5.9.0",
+    "jszip": "^3.10.1",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "electron": "^36.0.0",
+    "electron-builder": "^26.0.0"
+  }
+}

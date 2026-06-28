@@ -1,0 +1,45 @@
+{
+  "name": "trip-assistant",
+  "version": "1.0.0",
+  "description": "出張アシスタント — 日帰り/宿泊 ランチャー",
+  "main": "main.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "electron .",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "docx": "^9.0.2",
+    "dotenv": "^16.0.0",
+    "express": "^4.19.0",
+    "fast-xml-parser": "^4.0.0",
+    "jszip": "^3.0.0",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^25.0.0",
+    "png-to-ico": "^3.0.1"
+  },
+  "build": {
+    "appId": "com.pich.trip-assistant",
+    "productName": "Trip Assistant",
+    "extraResources": [
+      {
+        "from": ".env",
+        "to": ".env"
+      }
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  }
+}

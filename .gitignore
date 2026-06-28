@@ -1,0 +1,7 @@
+.env
+node_modules/
+dist/
+apps/*/node_modules/
+apps/*/.env
+apps/hotel-finder/dist/
+*.log

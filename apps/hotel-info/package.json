@@ -1,0 +1,13 @@
+{
+  "name": "hotel-info",
+  "version": "1.0.0",
+  "description": "Hotel logistics info & 計画書 generator for a manually-entered hotel",
+  "scripts": {
+    "start": "node --env-file=.env server.js"
+  },
+  "dependencies": {
+    "docx": "^9.0.2",
+    "express": "^4.19.0",
+    "sharp": "^0.35.2"
+  }
+}
